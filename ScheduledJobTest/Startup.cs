@@ -13,8 +13,9 @@ namespace ScheduledJobTest
     public class Startup
     {
         private readonly IConfigurationRoot configuration;
-        private IScheduler _scheduler;
-        private ISchedulerFactory _schedulerFactory;
+        private IScheduler scheduler;
+        private ISchedulerFactory schedulerFactory;
+
         public Startup()
         {
             var builder = new ConfigurationBuilder()
@@ -26,23 +27,36 @@ namespace ScheduledJobTest
 
         public async Task StartAsync()
         {
-            Console.WriteLine("hi");
-
             var services = new ServiceCollection();
             ConfigureServices(services);
             var container = services.BuildServiceProvider();
             var jobFactory = new JobFactory(container);
-            _schedulerFactory = new StdSchedulerFactory();
-            _scheduler = await _schedulerFactory.GetScheduler();
-            _scheduler.JobFactory = jobFactory;
-            await _scheduler.Start();
+            schedulerFactory = new StdSchedulerFactory();
+            scheduler = await schedulerFactory.GetScheduler();
+            scheduler.JobFactory = jobFactory;
+            await scheduler.Start();
 
-            await CreateJobs();
+            await ConfigureJobs();
         }
 
-        public void StopAsync()
+        public async Task StopAsync()
         {
             // noop
+        }
+
+        private async Task ConfigureJobs()
+        {
+            IJobDetail dataRetrievalJob = JobBuilder
+                .Create<DataRetrievalJob>()
+                .WithIdentity("MyDataRetrievalJob", "MyJobGroup")
+                .Build();
+
+            ITrigger dataRetrievalJobTrigger = TriggerBuilder.Create()
+                .WithIdentity("MyTrigger", "MyJobGroup")
+                .WithCronSchedule(configuration.GetValue<string>("myCron"))
+                .Build();
+
+            await scheduler.ScheduleJob(dataRetrievalJob, dataRetrievalJobTrigger);
         }
 
         private void ConfigureServices(IServiceCollection services)
@@ -51,21 +65,6 @@ namespace ScheduledJobTest
             services.AddSingleton<RestApiEmployeeRepository>();
             services.AddTransient<DataRetrievalJob>();
             //services.AddTransient<EFEmployeeRepository>();
-        }
-
-        private async Task CreateJobs()
-        {
-            IJobDetail dataRetrievalJob = JobBuilder
-                .Create<DataRetrievalJob>()
-                .WithIdentity("job1", "group1")
-                .Build();
-
-            ITrigger dataRetrievalJobTrigger = TriggerBuilder.Create()
-                .WithIdentity("trigger1", "group1")
-                .WithCronSchedule("0/1 * * ? * * *")
-                .Build();
-
-            await _scheduler.ScheduleJob(dataRetrievalJob, dataRetrievalJobTrigger);
         }
     }
 }

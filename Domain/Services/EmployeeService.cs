@@ -26,7 +26,7 @@ namespace Domain.Services
                     Console.WriteLine(fetchedEmployee.ToString());
 
                 }
-                await _employeePersistenceRepo.SaveAsync(fetchedEmployees);
+                //await _employeePersistenceRepo.SaveAsync(fetchedEmployees);
             }
             catch(Exception ex)
             {
