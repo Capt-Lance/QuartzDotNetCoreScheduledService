@@ -9,9 +9,9 @@ namespace ScheduledJobTest
         {
             var rc = HostFactory.Run(x =>
             {
-                x.Service<SchedulingService>(s =>
+                x.Service<Startup>(s =>
                 {
-                    s.ConstructUsing(name => new SchedulingService());
+                    s.ConstructUsing(name => new Startup());
                     s.WhenStarted(ss => ss.StartAsync().Wait());
                     s.WhenStopped(ss => ss.StopAsync());
                 });
